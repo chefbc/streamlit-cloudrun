@@ -10,6 +10,10 @@ from gspread_dataframe import get_as_dataframe, set_with_dataframe
 # from datetime import datetime
 from datetime import datetime, timedelta
 
+import google.auth
+import google.auth.transport.requests
+# from rich import inspect
+
 st.title('KM Pole Vault Page')
 
 DATE_COLUMN = 'date/time'
@@ -132,17 +136,19 @@ if __name__ == "__main__":
     #AgGrid(df)
 
 
-    import google.auth
-    import google.auth.transport.requests
-    from rich import inspect
 
-    compute_credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    scopes = [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive'
+    ]
+
+    credentials, _ = google.auth.default(scopes=scopes)
     request = google.auth.transport.requests.Request()
-    compute_credentials.refresh(request)
+    credentials.refresh(request)
 
     #gc = gspread.service_account(filename='/usr/src/app/project/chefbc-cd4d1fb4ed74.json')
 
-    gc = gspread.authorize(compute_credentials)
+    gc = gspread.authorize(credentials)
 
 
     #st.write(gc.list_spreadsheet_files())
