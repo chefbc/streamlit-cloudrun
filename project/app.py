@@ -131,7 +131,19 @@ if __name__ == "__main__":
     #df = pd.read_csv('https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv')
     #AgGrid(df)
 
-    gc = gspread.service_account(filename='/usr/src/app/project/chefbc-cd4d1fb4ed74.json')
+
+    import google.auth
+    import google.auth.transport.requests
+    from rich import inspect
+
+    compute_credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    request = google.auth.transport.requests.Request()
+    compute_credentials.refresh(request)
+
+    #gc = gspread.service_account(filename='/usr/src/app/project/chefbc-cd4d1fb4ed74.json')
+
+    gc = gspread.authorize(compute_credentials)
+
 
     #st.write(gc.list_spreadsheet_files())
 
