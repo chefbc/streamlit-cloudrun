@@ -57,6 +57,8 @@ COPY --chown=user:user --from=build /opt/venv /opt/venv
 # set working directory
 WORKDIR /usr/src/app
 
+COPY ./project /usr/src/app/project
+
 # switch to non-root user
 USER user
 
