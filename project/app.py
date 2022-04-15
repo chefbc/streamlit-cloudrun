@@ -1,120 +1,173 @@
-from pyparsing import one_of
 import streamlit as st
 import pandas as pd
 import numpy as np
 
-from st_aggrid import AgGrid
-
 import gspread
 from gspread_dataframe import get_as_dataframe, set_with_dataframe
-# from datetime import datetime
 from datetime import datetime, timedelta
 
 import google.auth
 import google.auth.transport.requests
 # from rich import inspect
 
-st.title('KM Pole Vault Page')
-
-DATE_COLUMN = 'date/time'
-DATA_URL = ('https://s3-us-west-2.amazonaws.com/'
-            'streamlit-demo-data/uber-raw-data-sep14.csv.gz')
-
-@st.cache
-def load_data(nrows):
-    data = pd.read_csv(DATA_URL, nrows=nrows)
-    lowercase = lambda x: str(x).lower()
-    data.rename(lowercase, axis='columns', inplace=True)
-    data['date'] = pd.to_datetime(data['DATE_COLUMN'])
-    # df3['date']= pd.to_datetime(df3['date'])
-
-    return data
+from dataclasses import dataclass
+from jinja2 import Template
+from os.path import exists
 
 @st.cache
 def load_sheet(sheet: gspread.spreadsheet.Spreadsheet, tab_name: str) -> pd.DataFrame:
     tab = sheet.worksheet(tab_name)
     # df1.drop(df1[df1['date'].isnull()].index, inplace=True)
-    df = get_as_dataframe(tab, parse_dates=True, usecols=[*range(0, 10)]) #.fillna('')
+    df = get_as_dataframe(tab, parse_dates=True, usecols=[*range(0, 11)]) #.fillna('')
     df.drop(df[df['date'].isnull()].index, inplace=True)
+    
+    df['bus']= pd.to_datetime(df['bus'])
+    df['bus'] = df['bus'].fillna(pd.to_datetime('2022-01-01'))
+    # df['bus'] = df['bus'].fillna('DATE')
+
+    df['who'] = df['who'].fillna('ALL')
+    # df['info'] = df['info'].fillna('-')
+
     df['date']= pd.to_datetime(df['date'])
+
     df['time'] = df['time'].fillna(pd.to_datetime('2022-01-01'))
     df['time']= pd.to_datetime(df['time'])
 
     return df.fillna('')
 
 
-# data_load_state = st.text('Loading data...')
-# data = load_data(10000)
-# data_load_state.text("Done! (using st.cache)")
+@st.cache
+def get_events(gc, sheet_name: str, tabs: list) -> pd.DataFrame:
+    
+    google_sheet = gc.open('PVStreamlit')
 
-# if st.checkbox('Show raw data'):
-#     st.subheader('Raw data')
-#     st.write(data)
+    events = load_sheet(google_sheet, 'Events')
+    meets = load_sheet(google_sheet, 'Meets')
 
-# st.subheader('Number of pickups by hour')
-# hist_values = np.histogram(data[DATE_COLUMN].dt.hour, bins=24, range=(0,24))[0]
-# st.bar_chart(hist_values)
+    df3 = pd.concat([events, meets])
+    df3.reset_index(drop=True)
+    
+    df4 = df3.loc[df3['date'] >= datetime.today() - timedelta(days = 1)]
 
-# # Some number in the range 0-23
-# hour_to_filter = st.slider('hour', 0, 23, 17)
-# filtered_data = data[data[DATE_COLUMN].dt.hour == hour_to_filter]
+    df4 = df4.sort_values(by=['date'], ascending=[True])#, inplace=True)
+    # # df4.reset_index(drop=True)
+    # df4.reset_index(drop=True, inplace=True)
 
-# st.subheader('Map of all pickups at %s:00' % hour_to_filter)
-# st.map(filtered_data)
+    return df4
+
+@dataclass
+class EventItem:
+    """Class for event."""
+    name: str
+    location: str
+    bus: datetime
+    time: datetime
+    date: datetime
+    event_type: str 
+    #team: str 
+    #gender: str
+    who: str
+    info: str
+    link: str
+
+    t = Template('''
+        <article class="card fl-left">
+            <section class="date">
+                <time>
+                    <span>{{ date.strftime('%-d') }}</span>
+                    <span>{{ date.strftime('%b') }}</span>
+                </time>
+            </section>
+            <section class="card-cont">
+                <small>{{event_type}}</small>
+                <h3>{{name}}</h3>
+                <div class="even-date">
+                    <i class="fa fa-calendar"></i>
+                    <time>
+                        <span>{{ date.strftime('%A, %B %-d %Y') }}</span>
+                        <span>{{time_string}}</span>
+                    </time>
+                </div>
+                <div class="even-info">
+                    <i class="fa fa-user"></i>
+                    <p>{{who}}</p>
+                </div>
+                <div class="even-info">
+                    <i class="fa fa-info"></i>
+                    <p>{{info}}</p>
+                </div>
+                <div class="even-info">
+                    <i class="fa fa-map-marker"></i>
+                    <p>{{location}}</p>
+                    {% if event_type == 'meet2' -%}
+                        <a href="#" class="button">Details</a>
+                    {% endif -%}
+                </div>
+            </section>
+        </article>''')
+
+    def render_html(self) -> str:
+        return self.t.render(
+            event_type=self.event_type,
+            name=self.name, 
+            date=self.date,
+            # bus=None if self.bus == pd.Timestamp('2022-01-01') else self.bus,
+            #time=None if self.time == pd.Timestamp('2022-01-01') else self.time,
+            time_string=self.__format_time(self.bus, self.time),
+            who=self.who,
+            info=self.info,
+            location=self.location,
+            link=self.link,
+            )
+
+    def __format_time(self, bus: pd.Timestamp, time: pd.Timestamp,) -> str:
+        if bus == pd.Timestamp('2022-01-01'):
+            b = ''
+        else:
+            b =  f"Bus: {bus.strftime('%-I:%M %p')}"
+
+        if time == pd.Timestamp('2022-01-01'):
+            t = '&nbsp;'
+        else:
+            t = f"Time: {time.strftime('%-I:%M %p')}"
+
+        return f"{b}   {t}"
+
+
+
+
+def event_df_to_list(df: pd.DataFrame) -> list:
+    # st.write(df.head())
+    x = []
+    for date in df['date'].unique():
+        df2 = df.loc[df['date'] == date] 
+        t = []
+        for idx, row in df2.iterrows():
+            t.append(
+                EventItem(
+                    name=row['name'], 
+                    location=row['location'], 
+                    bus=row['bus'],
+                    time=row['time'],
+                    date=row['date'], 
+                    event_type= row['type'],
+                    #row['team'],
+                    #row['gender'],
+                    who=row['who'],
+                    info=row['info'],
+                    link=row['link'],
+                )
+            )      
+        x.append(t)
+    return x
 
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-
-def attempt(name, school, school_year) -> None:
-
-    with st.form(f"{name}_{school}_attempt"):
-        #st.title(name)
-        #st.caption(f'{school} | {school_year}')
-        
-        head1, head2, = st.columns([6, 1])
-
-        with head1:
-            st.title(name)
-            st.caption(f'{school} | {school_year}')
-
-        with head2:
-            st.title(f"feet-inches")
-        
-
-        attempt1, attempt2, attempt3 = st.columns(3)
-        
-        with attempt1:
-            option1 = st.selectbox(
-                'Attempt 1',
-                ('.', 'Pass', 'Make', 'Miss'),
-                key='option1',
-                disabled=False,
-            )
-            # st.write(option1)
-        
-        with attempt2:
-            option2 = st.selectbox(
-                'Attempt 2',
-                ('.', 'Pass', 'Make', 'Miss'),
-                key='option2',
-                disabled=(False if option1 == 'Miss' else True)
-            )
-
-        with attempt3:
-            option3 = st.selectbox(
-                'Attempt 3',
-                ('.', 'Pass', 'Make', 'Miss'),
-                key='option3',
-                disabled=(False if option2 == 'Miss' else True)
-            )
-        
-        submitted = st.form_submit_button("Save")
-        if submitted:
-            st.write('You selected:', f"{option1}, {option2}, {option3}")
-
-
+def fa():
+    ### Font Awesome
+    st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">', unsafe_allow_html=True)
 
 def format_row(row) -> str:
     return f"""
@@ -124,116 +177,51 @@ def format_row(row) -> str:
     {row['time'].strftime('%I:%M %p')}
     """
 
+def html(event_list, weight_sheet_url) -> str:
+    x = []
+    x.append(f'<section class="container">\n')
+    x.append(f'     <h1>Pole Vault gigs</h1>\n')
+    x.append(f'         <a href="{weight_sheet_url}" target="_blank" rel="noopener noreferrer">Weight Sheet</a>\n')
+
+    x.append(f'     <section class="container">\n')
+    
+    for e in event_list:
+        x.append(f'     <div class="row">')
+        for item in e:
+            x.append(f'{item.render_html()}')
+        x.append(f'\n     </div>\n')
+    x.append(f'</section>')
+
+    return ''.join(x)
 
 if __name__ == "__main__":
-    # active_tab = tabs(["Tab 1", "Tab 2", "Tab 3"])
-    local_css("/usr/src/app/project/static/streamlit.css")
+    st.set_page_config(page_title="Calendar", page_icon="📅", layout="wide")
+    local_css("/usr/src/app/project/static/cal3.css")
+    fa()
 
-    #attempt("Hulk Hogan", "Kettle Moraine", "10th")
-    #attempt("Macho Man Randy Savage", "Waukesha North", "12th")
-
-    #df = pd.read_csv('https://raw.githubusercontent.com/fivethirtyeight/data/master/airline-safety/airline-safety.csv')
-    #AgGrid(df)
-
-
-
-    scopes = [
-        'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/drive'
-    ]
-
-    credentials, _ = google.auth.default(scopes=scopes)
-    request = google.auth.transport.requests.Request()
-    credentials.refresh(request)
-
-    #gc = gspread.service_account(filename='/usr/src/app/project/chefbc-cd4d1fb4ed74.json')
-
-    gc = gspread.authorize(credentials)
+    # auth
+    if exists('/usr/src/app/project/chefbc-cd4d1fb4ed74.json'):
+        gc = gspread.service_account(filename='/usr/src/app/project/chefbc-cd4d1fb4ed74.json')
+    else:
+        scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        credentials, _ = google.auth.default(scopes=scopes)
+        request = google.auth.transport.requests.Request()
+        credentials.refresh(request)
+        gc = gspread.authorize(credentials)
 
 
-    #st.write(gc.list_spreadsheet_files())
+    events_df = get_events(gc,'PVStreamlit', [])
 
-    google_sheet = gc.open('PVStreamlit')
+    event_list = event_df_to_list(events_df)
 
-    events = load_sheet(google_sheet, 'Events')
-    meets = load_sheet(google_sheet, 'Meets')
-
-    df3 = pd.concat([events, meets])
-    df3.reset_index(drop=True)
-
-    #all = 
-    # st.write(all.loc[all['date'] >= '2022-05-01 00:58:10'])
-    # df4 = df3.loc[df3['date'] >= '2022-05-01 00:58:10'] 
-    
-    # timedelta(-1)
-    #today = datetime.now().timedelta(-1)
-    #yesterday = timedelta(-1)
-    #st.write
-    
-    df4 = df3.loc[df3['date'] >= datetime.today() - timedelta(days = 1)]
-
-    df4.sort_values(by=['date'], ascending=[True], inplace=True)
-    # df4.reset_index(drop=True)
-    # df4.reset_index(drop=True, inplace=True)
-    # reindex?
+    # weight sheet
+    if datetime.today() > datetime(2022, 5, 16):
+        weight_sheet_url = "https://drive.google.com/file/d/1J3asehXra0R7ZIIQWswgSDn4sR3h7oES/view?usp=sharing"
+    else:
+        weight_sheet_url = "https://drive.google.com/file/d/1fukftB9zKPpQvcuLi3Cca2FX6GA8UDE5/view?usp=sharing"
 
 
-    # st.write(df4)
-    # st.expander(label, expanded=False)
-
-    # Step: Keep rows where date >= 2020-04-01 00:58:10
-    
-    #df4 = df3.loc[df3['date'] >= datetime.now()]
-
-    #for row in all.iterrows():
-    for idx, row in df4.iterrows():
-
-        # st.write(row['name'])
-        # st.write(format_row(row))
-        #st.write(type(row))
-        # if idx <= 5
-        # st.write(idx)
-        # with st.expander(format_row(row), expanded=idx <= 5):
-        #     st.write(row['description'])
-
-
-        # with st.container():
-        #     st.write(format_row(row))
-        #     st.write(row['description'])
-        with st.form(f"{row['type']}{idx}"):
-            # st.write(f"{row['type']}{idx}")
-
-            head1, head2, = st.columns([3, 1])
-
-            with head1:
-                st.markdown(f"#### {row['name']}") # @ {row['location']}")
-                st.markdown(f"###### @ {row['location']}")
-                st.caption(f"Team: {row['gender']}")
-                st.caption(f"Level: {row['team']}")
-
-            with head2:
-                # st.title(f"feet-inches")
-                st.markdown(f"###### {row['date'].strftime('%a, %B %d %Y')}")
-                st.markdown(f"###### {row['time'].strftime('%-I:%M %p')}")
-
-            #st.markdown(f"#### {row['name']}")
-            #st.markdown(f"###### {row['location']}")
-
-            #st.subheader(row['date'].strftime('%a, %B %d %Y'))
-            #st.caption(row['time'].strftime('%I:%M %p'))
-            st.write(row['description'])
-
-            submitted = st.form_submit_button("Save")
-            if submitted:
-                st.write('You selected:', f"clicked")
-
-        
-
-    # st.write(all.sort_values(by=['date'], ascending=[True]))
-
-    # AgGrid(all.sort_values(by=['date'], ascending=[True]))
-
-
-   # st.write(load_sheet(google_sheet, 'Events'))
-
-   # st.write(load_sheet(google_sheet, 'Meets'))
+    st.markdown(html(event_list, weight_sheet_url), unsafe_allow_html=True)
