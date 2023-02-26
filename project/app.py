@@ -68,8 +68,8 @@ class GoogleCalendarEvent:
 
 
 st.cache_data(ttl=3600) # 1 hour
-def get_data(creds, maxresults):
-    service = build('calendar', 'v3', credentials=creds)
+def get_data(credentials, maxresults):
+    service = build('calendar', 'v3', credentials=credentials)
     
     now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     scopes = ['https://www.googleapis.com/auth/calendar.readonly']
 
     if exists(key_path):
-        creds = service_account.Credentials.from_service_account_file(
+        credentials = service_account.Credentials.from_service_account_file(
           key_path, scopes=scopes,
       )
     else:
@@ -107,10 +107,9 @@ if __name__ == "__main__":
         request = google.auth.transport.requests.Request()
         credentials.refresh(request)
  
-    service = build('calendar', 'v3', credentials=creds)
+    # service = build('calendar', 'v3', credentials=credentials)
 
-
-    events = get_data(creds, maxresults)
+    events = get_data(credentials, maxresults)
     # st.write(events)
 
     for event in events:
