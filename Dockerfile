@@ -24,7 +24,7 @@
 
 
 # BUILD IMAGE
-FROM python:3.8.2-slim-buster AS build
+FROM python:3.10-slim-buster AS build
 
 # virtualenv
 ENV VIRTUAL_ENV=/opt/venv
@@ -37,7 +37,7 @@ COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
 # RUNTIME IMAGE
-FROM python:3.8.2-slim-buster AS RUNTIME
+FROM python:3.10-slim-buster AS RUNTIME
 
 # setup user and group ids
 ARG USER_ID=1000
@@ -57,7 +57,8 @@ COPY --chown=user:user --from=build /opt/venv /opt/venv
 # set working directory
 WORKDIR /usr/src/app
 
-COPY ./project /usr/src/app/project
+#COPY ./project /usr/src/app/project
+COPY ./project /usr/src/app
 
 # switch to non-root user
 USER user
@@ -72,4 +73,4 @@ EXPOSE 8080
 
 # Run streamlit
 # CMD streamlit run project/app.py
-CMD streamlit run --server.port 8080 --server.enableCORS false project/app.py
+CMD streamlit run --server.port 8080 --server.enableCORS false app.py

@@ -1,6 +1,6 @@
 # Build and deploy
 
-Command to build the application. PLease remeber to change the project name and application name
+Command to build the application. Please remeber to change the project name and application name
 ```
 gcloud builds submit --tag gcr.io/<ProjectName>/<AppName>  --project=<ProjectName>
 ```
