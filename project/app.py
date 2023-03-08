@@ -20,12 +20,6 @@ from googleapiclient.discovery import build
 import re
 
 import datetime
-import platform
-import urllib
-
-from user_agents import parse
-
-# st.cache_data(ttl=3600)
 
 @dataclass
 class GoogleCalendarEvent:
