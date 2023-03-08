@@ -23,6 +23,8 @@ import datetime
 import platform
 import urllib
 
+from user_agents import parse
+
 # st.cache_data(ttl=3600)
 
 @dataclass
@@ -38,6 +40,10 @@ class GoogleCalendarEvent:
 
     def remove_span(self, html_string):
         return re.sub(r'<span.*?>(.*?)</span>', r'\1', html_string)
+
+    def replace_br_with_newline(self, html_string):
+        """Replace <br /> tags with newline characters"""
+        return re.sub(r'<br\s*/?>', '\n', html_string)
 
     def _suffix(self, d):
         return 'th' if 11<=d<=13 else {1:'st',2:'nd',3:'rd'}.get(d%10, 'th')
@@ -55,15 +61,29 @@ class GoogleCalendarEvent:
         st.write("")
         st.header(self.summary)
         st.caption(self._datetime_format(self.start_date, '%A, %B {S}  %-I:%M %p'))
-        if self.location:
-            # st.write(self.location)
-            if platform.system() == 'Darwin':
-                st.markdown(f"[{self.location}](https://maps.apple.com/?q='{urllib.parse.quote(self.location)}')",unsafe_allow_html=True)
-            else:
-                st.markdown(f"[{self.location}](https://maps.google.com/?q='{urllib.parse.quote(self.location)}')",unsafe_allow_html=True)
+        if self.location:            
+            #st.markdown(f"{locate_name} {apple_maps} {google_maps}",unsafe_allow_html=True)
+            st.write(self.location.split(',')[0])
+            st.markdown('<ul style="list-style-type: none;">',unsafe_allow_html=True)
+            st.markdown('<li style="list-style-type: none;"><a href="https://maps.apple.com/?q=\'{urllib.parse.quote(self.location)}\'"><i class="fa-brands fa-apple" style="margin: 0 1em 0 0;"></i>Apple Maps</a></li>', unsafe_allow_html=True)
+            st.markdown('<li style="list-style-type: none;"><a href="https://maps.goolge.com/?q=\'{urllib.parse.quote(self.location)}\'"><i class="fa-brands fa-google" style="margin: 0 1em 0 0;"></i>Google Maps</a></li>', unsafe_allow_html=True)
+            st.markdown('</ul>',unsafe_allow_html=True)
 
         if self.description:
-            st.markdown(self.remove_span(self.description),unsafe_allow_html=True)
+
+            content = self.description.split("---")
+
+            cols = st.columns(len(content))
+
+            for idx, md in enumerate(content):
+                # st.write(idx)
+                # st.write(md)
+                md = self.remove_span(md)
+                md = self.replace_br_with_newline(md)
+                cols[idx].markdown(md, unsafe_allow_html=True)
+
+            # st.markdown(self.remove_span(self.description),unsafe_allow_html=True)
+
         st.markdown("---")
 
 
@@ -79,10 +99,24 @@ def get_data(credentials, maxresults):
 
     return events_result.get('items', [])
 
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+
+def fa():
+    ### Font Awesome
+    st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">', unsafe_allow_html=True)
+
 
 
 if __name__ == "__main__":
     st.set_page_config(page_title="Calendar", page_icon="📅", layout="wide")
+    local_css("./static/streamlit.css")
+    fa()
+
+    # st.write(platform.system())
+    # st.write(user_agent.os.family)
 
     query_params = st.experimental_get_query_params()
 

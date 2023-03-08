@@ -3,7 +3,7 @@
     background-color: #11A27B;
 } */
 
-.stButton>button{
+.stButton>button {
     /*color: #11A27B;
     box-sizing: 5%;
     height: 5em;
@@ -33,3 +33,73 @@
   } */
 
 
+/* .element-container  .stMarkdown{
+    background-color: blueviolet;
+  } */
+
+/* .fa-li {
+      left: calc(var(--fa-li-width, 2em)*-1);
+      position:fixed;
+      text-align: center;
+      width: var(--fa-li-width, 2em);
+      line-height: inherit;
+  } */
+
+
+.stMarkdown h1, h2 {
+    /* background-color: aqua; */
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+.stMarkdown p, ol, ul, dl {
+    /* background-color: aqua; */
+    margin-bottom: 5px;
+}
+
+.stMarkdown li {
+    /* background-color: aqua; */
+    margin-bottom: 5px;
+    /* list-style: none; */
+}
+
+.stMarkdown hr {
+    /* background-color: red; */
+    /* padding-top: 0px;
+       padding-bottom: 0px; */
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+ .stMarkdown ul {
+    /* list-style-type: none; */
+    padding-left: 8px;
+    /* color: #666; */
+}
+
+/*
+.stMarkdown li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 10px
+}
+
+.stMarkdown li:before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-family: FontAwesome;
+    content: "\f058";
+    color: green;
+} */
+
+
+
+
+
+
+
+/* hide footer */
+footer {
+    visibility: hidden;
+}
