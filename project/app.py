@@ -54,7 +54,17 @@ class GoogleCalendarEvent:
     def display(self):
         st.write("")
         st.header(self.summary)
-        st.caption(self._datetime_format(self.start_date, '%A, %B {S}  %-I:%M %p'))
+        # st.caption(self._datetime_format(self.start_date, '%A, %B {S}  %-I:%M %p'))
+
+        if "practice" in self.summary.lower():
+            # add endtime to practice
+            st.caption(f"{self._datetime_format(self.start_date, '%A, %B {S}  %-I:%M %p')} - {self._datetime_format(self.end_date, '%-I:%M %p')}")
+        else:
+            st.caption(self._datetime_format(self.start_date, '%A, %B {S}  %-I:%M %p'))
+
+
+
+
         if self.location:            
             #st.markdown(f"{locate_name} {apple_maps} {google_maps}",unsafe_allow_html=True)
             st.write(self.location.split(',')[0])
@@ -97,12 +107,9 @@ def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-
 def fa():
     ### Font Awesome
     st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">', unsafe_allow_html=True)
-
-
 
 if __name__ == "__main__":
     st.set_page_config(page_title="Calendar", page_icon="📅", layout="wide")
@@ -120,6 +127,40 @@ if __name__ == "__main__":
 
     st.title("📅 Latest Events")
     st.markdown("---")
+
+    week_num = datetime.datetime.now().isocalendar().week
+
+    # week_num = datetime.date(2023, 1, 1).isocalendar().week
+    # week_num = datetime.date(2023, 3, 14).isocalendar().week
+    # week_num = datetime.date(2023, 5, 1).isocalendar().week
+    # week_num = datetime.date(2023, 5, 22).isocalendar().week
+    # week_num = datetime.date(2023, 6, 16).isocalendar().week
+
+    links = st.secrets.get("links", ["","",""])
+
+    if 10 < week_num < 14:
+        # sheet 1
+        st.markdown(f'#### <a href="{links[0]}"><i class="fa-solid fa-link" style="margin: 0 1em 0 0;"></i>Weight Verification Form</a>', unsafe_allow_html=True)
+        st.markdown("---")
+    elif 14 < week_num < 20:
+        # sheet 2
+        st.markdown(f'#### <a href="{links[1]}"><i class="fa-solid fa-link" style="margin: 0 1em 0 0;"></i>Weight Verification Form</a>', unsafe_allow_html=True)
+        st.markdown("---")
+    elif 20 < week_num < 24:
+        # sheet 3
+        st.markdown(f'#### <a href="{links[2]}"><i class="fa-solid fa-link" style="margin: 0 1em 0 0;"></i>Weight Verification Form</a>', unsafe_allow_html=True)
+        st.markdown("---")
+
+    if 10 < week_num < 24:
+        with st.expander("Subscribe to Calendar"):
+            st.subheader("Calendar App > Calendars > Add Calendar > Add Subscription Calendar")
+            st.caption("Paste Subscription Url:")
+            st.code(st.secrets.get("calendar_url", ""))
+
+    # 10 week = 36
+    # 14 week = 40
+    # 20 week = 46
+    # 24 week end
 
     # auth
     key_path = st.secrets.get("key_path", "")
