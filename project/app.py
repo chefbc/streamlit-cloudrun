@@ -130,28 +130,30 @@ if __name__ == "__main__":
 
     week_num = datetime.datetime.now().isocalendar().week
 
-    # week_num = datetime.date(2023, 1, 1).isocalendar().week no
-    # week_num = datetime.date(2023, 3, 14).isocalendar().week 1
-    # week_num = datetime.date(2023, 5, 1).isocalendar().week 2
-    # week_num = datetime.date(2023, 5, 22).isocalendar().week 3
-    # week_num = datetime.date(2023, 6, 16).isocalendar().week no
+    # st.write(week_num)
+
+    # week_num = datetime.date(2023, 1, 1).isocalendar().week #no
+    # week_num = datetime.date(2023, 3, 14).isocalendar().week #1
+    # week_num = datetime.date(2023, 5, 1).isocalendar().week #2
+    # week_num = datetime.date(2023, 5, 22).isocalendar().week #3
+    # week_num = datetime.date(2023, 6, 12).isocalendar().week #no
 
     links = st.secrets.get("links", ["","",""])
 
-    if 10 < week_num < 14: # March 5, 2023
+    if 10 <= week_num < 14: # March 5, 2023
         # sheet 1
         st.markdown(f'#### <a href="{links[0]}"><i class="fa-solid fa-link" style="margin: 0 1em 0 0;"></i>Weight Verification Form</a>', unsafe_allow_html=True)
         st.markdown("---")
-    elif 14 < week_num < 20: # April 2, 2023
+    elif 14 <= week_num < 20: # April 2, 2023
         # sheet 2
         st.markdown(f'#### <a href="{links[1]}"><i class="fa-solid fa-link" style="margin: 0 1em 0 0;"></i>Weight Verification Form</a>', unsafe_allow_html=True)
         st.markdown("---")
-    elif 20 < week_num < 24: # May 14, 2023
+    elif 20 <= week_num < 24: # May 14, 2023
         # sheet 3
         st.markdown(f'#### <a href="{links[2]}"><i class="fa-solid fa-link" style="margin: 0 1em 0 0;"></i>Weight Verification Form</a>', unsafe_allow_html=True)
         st.markdown("---")
 
-    if 10 < week_num < 24:
+    if 10 <= week_num < 24:
         with st.expander("Subscribe to Calendar"):
             st.subheader("Calendar App > Calendars > Add Calendar > Add Subscription Calendar")
             st.caption("Paste Subscription Url:")
